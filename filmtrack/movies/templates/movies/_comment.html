@@ -1,0 +1,54 @@
+<div class="comment-card {% if depth > 0 %}reply-card{% endif %} depth-{{ depth }}">
+    <div class="comment-header">
+        <div class="comment-author">
+            <span class="comment-user">{{ comment.user.username }}</span>
+            <span class="comment-date">{{ comment.created_at|date:"M d, Y g:i A" }}</span>
+        </div>
+        {% if not comment.is_deleted %}
+            {% if comment.user == user or user.is_superuser %}
+            <details class="comment-menu">
+                <summary class="comment-menu-trigger" aria-label="Comment actions"></summary>
+                <form method="post" action="{% url 'movies:movie_delete_comment' object.pk comment.pk %}" class="comment-delete">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit" class="comment-menu-item">Delete</button>
+                </form>
+            </details>
+            {% endif %}
+        {% endif %}
+    </div>
+    {% if comment.parent %}
+    <div class="replying-to">Replying to @{{ comment.parent.user.username }}</div>
+    {% endif %}
+    <p class="comment-text">{% if comment.is_deleted %}<em>Deleted</em>{% else %}{{ comment.text }}{% endif %}</p>
+    <div class="comment-actions">
+        {% if depth == 0 and comment.replies.all %}
+        <details class="replies-toggle">
+            <summary class="replies-summary">Replies ({{ comment.reply_count|default:comment.replies.count }})</summary>
+            <div class="reply-list depth-{{ depth }}">
+                {% for reply in comment.replies.all %}
+                    {% include "movies/_comment.html" with comment=reply depth=depth|add:"1" max_depth=max_depth %}
+                {% endfor %}
+            </div>
+        </details>
+        {% endif %}
+        <details class="reply-toggle">
+            <summary class="reply-summary">Reply</summary>
+            <form method="post" action="{% url 'movies:movie_add_comment' object.pk %}" class="reply-form">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <input type="hidden" name="parent_id" value="{{ comment.pk }}">
+                <div class="replying-to">Replying to @{{ comment.user.username }}</div>
+                <textarea name="comment" rows="2" placeholder="Reply to @{{ comment.user.username }}..." class="comment-input reply-input"></textarea>
+                <button type="submit" class="btn btn-outline btn-small">Reply</button>
+            </form>
+        </details>
+    </div>
+    {% if depth > 0 and depth < max_depth and comment.replies.all %}
+    <div class="reply-list depth-{{ depth }}">
+        {% for reply in comment.replies.all %}
+            {% include "movies/_comment.html" with comment=reply depth=depth|add:"1" max_depth=max_depth %}
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>

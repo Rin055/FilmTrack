@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FilmTrack</title>
+    {% load static %}
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/site.css' %}">
+</head>
+<body class="app-body text-gray-100 min-h-screen flex flex-col">
+
+    <header class="app-header text-white shadow-md">
+        <div class="container mx-auto flex justify-between items-center px-4" style="height: 100px; padding-top: 0; padding-bottom: 0;">
+            <a href="{% url 'movies:movie_discover' %}" class="flex items-center hover:opacity-80 transition">
+                <img src="{% static 'images/logoshadow1.png' %}?v=2" alt="FilmTrack Logo" class="h-60 mr-2 mt-4">
+                <span class="text-xl font-bold hidden sm:inline"></span>
+            </a>
+            <nav>
+                <ul class="flex space-x-5 text-base text-gray-100">
+                    {% if user.is_authenticated %}
+                        <li><a href="{% url 'movies:movie_discover' %}" class="nav-link">Discover</a></li>
+                        <li><a href="{% url 'movies:movie_list' %}" class="nav-link">My Movies</a></li>
+                        <li><a href="{% url 'users:logout' %}" class="nav-link">Logout</a></li>
+                    {% else %}
+                        <li><a href="{% url 'users:login' %}" class="nav-link">Login</a></li>
+                        <li><a href="{% url 'users:register' %}" class="nav-link">Sign Up</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 flex-1">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <footer class="app-footer text-white text-center py-4 mt-8">
+        &copy; 2026 FilmTrack. All rights reserved.
+    </footer>
+
+    <script>
+      (function () {
+        const forms = document.querySelectorAll('.favorite-form');
+        forms.forEach((form) => {
+          form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const button = form.querySelector('.favorite-toggle');
+            const wasFavorite = button ? button.classList.contains('is-active') : false;
+
+            try {
+              const response = await fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+              });
+
+              if (!response.ok) {
+                throw new Error('Favorite request failed');
+              }
+
+              const data = await response.json();
+              if (button) {
+                button.classList.toggle('is-active', data.is_favorite);
+              }
+            } catch (error) {
+              if (button) {
+                button.classList.toggle('is-active', wasFavorite);
+              }
+            }
+          });
+        });
+
+        const statusForms = document.querySelectorAll('.status-form');
+        statusForms.forEach((form) => {
+          form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const menu = form.closest('.status-menu');
+            const trigger = menu ? menu.querySelector('.status-trigger') : null;
+            const chip = form.querySelector('.status-chip');
+
+            try {
+              const response = await fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+              });
+
+              if (!response.ok) {
+                throw new Error('Status request failed');
+              }
+
+              const data = await response.json();
+              if (trigger && data.status_display) {
+                trigger.textContent = data.status_display;
+              }
+              if (menu) {
+                const chips = menu.querySelectorAll('.status-chip');
+                chips.forEach((el) => el.classList.remove('is-active'));
+              }
+              if (chip) {
+                chip.classList.add('is-active');
+              }
+            } catch (error) {
+              return;
+            }
+          });
+        });
+
+        const statusMenus = document.querySelectorAll('.status-menu');
+        statusMenus.forEach((menu) => {
+          const trigger = menu.querySelector('.status-trigger');
+          if (!trigger) return;
+
+          trigger.addEventListener('click', (event) => {
+            event.preventDefault();
+            const isOpen = menu.classList.contains('is-open');
+            statusMenus.forEach((other) => {
+              other.classList.remove('is-open');
+              const otherTrigger = other.querySelector('.status-trigger');
+              if (otherTrigger) {
+                otherTrigger.setAttribute('aria-expanded', 'false');
+              }
+            });
+            menu.classList.toggle('is-open', !isOpen);
+            trigger.setAttribute('aria-expanded', String(!isOpen));
+          });
+        });
+
+        document.addEventListener('click', (event) => {
+          statusMenus.forEach((menu) => {
+            if (!menu.contains(event.target)) {
+              menu.classList.remove('is-open');
+              const trigger = menu.querySelector('.status-trigger');
+              if (trigger) {
+                trigger.setAttribute('aria-expanded', 'false');
+              }
+            }
+          });
+        });
+
+        document.addEventListener('keydown', (event) => {
+          if (event.key !== 'Escape') return;
+          statusMenus.forEach((menu) => {
+            menu.classList.remove('is-open');
+            const trigger = menu.querySelector('.status-trigger');
+            if (trigger) {
+              trigger.setAttribute('aria-expanded', 'false');
+            }
+          });
+        });
+      })();
+    </script>
+</body>
+</html>

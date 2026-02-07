@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="page-hero mb-6">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+            <p class="text-sm uppercase tracking-widest text-red-300">Movie Details</p>
+            <h1 class="page-title">{{ object.title }} <span class="text-gray-400">({{ object.release_year }})</span></h1>
+        </div>
+        <div class="flex flex-wrap gap-3">
+            {% if user.is_superuser or object.user == user %}
+            <form method="post" action="{% url 'movies:movie_delete' object.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" class="btn btn-primary">{% if user.is_superuser %}Delete{% else %}Remove{% endif %}</button>
+            </form>
+            {% endif %}
+            <a href="{% url 'movies:movie_list' %}" class="btn btn-muted">Back to List</a>
+        </div>
+    </div>
+</div>
+
+<div class="detail-grid">
+    <div class="card detail-poster">
+        {% if object.poster_url %}
+        <div class="card-media">
+            <img src="{{ object.poster_url }}" alt="{{ object.title }} poster">
+            <form method="post" action="{% url 'movies:movie_toggle_favorite' object.pk %}" class="favorite-form overlay-favorite">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" class="favorite-toggle {% if object.is_favorite %}is-active{% endif %}" aria-label="{% if object.is_favorite %}Unfavorite{% else %}Favorite{% endif %} {{ object.title }}">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6.02 4.02 4 6.5 4c1.74 0 3.41.81 4.5 2.09C12.09 4.81 13.76 4 15.5 4 17.98 4 20 6.02 20 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                    </svg>
+                </button>
+            </form>
+        </div>
+        {% else %}
+        <div class="card-media flex items-center justify-center text-gray-500">
+            No Poster
+            <form method="post" action="{% url 'movies:movie_toggle_favorite' object.pk %}" class="favorite-form overlay-favorite">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" class="favorite-toggle {% if object.is_favorite %}is-active{% endif %}" aria-label="{% if object.is_favorite %}Unfavorite{% else %}Favorite{% endif %} {{ object.title }}">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6.02 4.02 4 6.5 4c1.74 0 3.41.81 4.5 2.09C12.09 4.81 13.76 4 15.5 4 17.98 4 20 6.02 20 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                    </svg>
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+    <div class="form-card">
+        <div class="flex flex-wrap gap-3 mb-4">
+            <span class="chip">{{ object.get_status_display }}</span>
+            <span class="rating-badge">
+                &#9733;
+                {% if avg_rating %}
+                    {{ avg_rating|floatformat:1 }}/10
+                {% else %}
+                    N/A
+                {% endif %}
+            </span>
+            <span class="text-gray-400 text-sm">({{ rating_count }} ratings)</span>
+        </div>
+        {% if object.user == user %}
+        <form method="post" action="{% url 'movies:movie_set_status' object.pk %}" class="mb-4 flex flex-wrap gap-2 items-center">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <select name="status" class="status-select">
+                    <option value="planned" {% if object.status == 'planned' %}selected{% endif %}>Not Chosen Yet</option>
+                    <option value="watching" {% if object.status == 'watching' %}selected{% endif %}>Watching</option>
+                    <option value="watched" {% if object.status == 'watched' %}selected{% endif %}>Watched</option>
+                </select>
+            <button type="submit" class="btn btn-primary btn-small">Update</button>
+        </form>
+        {% endif %}
+        <div class="mb-6">
+            <h3 class="section-title mb-2">Your Rating</h3>
+            <form method="post" action="{% url 'movies:movie_set_rating' object.pk %}" class="flex flex-wrap gap-2 items-center">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <select name="rating" class="status-select">
+                    <option value="">Select rating</option>
+                    {% for n in rating_options %}
+                        <option value="{{ n }}" {% if user_rating and user_rating.rating == n %}selected{% endif %}>{{ n }}/10</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-primary btn-small">Save Rating</button>
+            </form>
+            {% if user_rating %}
+            <form method="post" action="{% url 'movies:movie_remove_rating' object.pk %}" class="mt-2">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" class="btn btn-outline btn-small">Remove Rating</button>
+            </form>
+            {% endif %}
+        </div>
+        <p class="text-gray-300 mb-2"><strong class="text-gray-100">Description:</strong> {{ object.description|default:"No description" }}</p>
+        <p class="text-gray-300 mb-4"><strong class="text-gray-100">Genres:</strong>
+            {% for genre in object.genres.all %}
+                {{ genre.name }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+        </p>
+    </div>
+</div>
+
+<div class="comments-section mt-8">
+    <h2 class="section-title mb-4">Comments</h2>
+    <form method="post" action="{% url 'movies:movie_add_comment' object.pk %}" class="comment-form mb-6">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <textarea name="comment" rows="3" placeholder="Share your thoughts..." class="comment-input"></textarea>
+        <button type="submit" class="btn btn-primary btn-small">Post Comment</button>
+    </form>
+
+    <div class="comment-list">
+        {% for comment in comments %}
+            {% include "movies/_comment.html" with comment=comment depth=0 max_depth=3 %}
+        {% empty %}
+        <p class="text-gray-400">No comments yet. Be the first to comment.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

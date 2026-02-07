@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="page-hero mb-6">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <p class="text-sm uppercase tracking-widest text-red-300">Collection</p>
+            <h1 class="page-title">Movies</h1>
+            <p class="text-gray-300 mt-2">All your saved movies in one place.</p>
+        </div>
+        <div class="flex flex-wrap gap-3">
+            <a href="{% url 'movies:folder_list' %}" class="btn btn-outline">Folders</a>
+        </div>
+    </div>
+</div>
+
+{% if movies %}
+    <div class="mb-8">
+        <div class="flex flex-wrap items-center gap-3 mb-4">
+            <h2 class="section-title">All Titles</h2>
+            <form method="get" class="sort-form">
+                {% if selected_folder %}
+                <input type="hidden" name="folder" value="{{ selected_folder }}">
+                {% endif %}
+                {% if favorites_only %}
+                <input type="hidden" name="favorites" value="1">
+                {% endif %}
+                {% if selected_status %}
+                <input type="hidden" name="status" value="{{ selected_status }}">
+                {% endif %}
+                <select name="sort" class="status-select" onchange="this.form.submit()">
+                    <option value="newest" {% if selected_sort == 'newest' %}selected{% endif %}>Newest</option>
+                    <option value="oldest" {% if selected_sort == 'oldest' %}selected{% endif %}>Oldest</option>
+                    <option value="title" {% if selected_sort == 'title' %}selected{% endif %}>Title</option>
+                </select>
+            </form>
+        </div>
+        <div class="collection-grid">
+            {% for movie in movies %}
+            <article class="lb-card">
+                <div class="lb-poster">
+                    {% if movie.id in recent_badge_ids %}
+                    <span class="recent-badge">Recently added</span>
+                    {% endif %}
+                    <a href="{% url 'movies:movie_detail' movie.pk %}">
+                        {% if movie.poster_url %}
+                        <img src="{{ movie.poster_url }}" alt="{{ movie.title }} poster">
+                        {% else %}
+                        <div class="lb-poster-fallback">No Poster</div>
+                        {% endif %}
+                        <span class="lb-rating">&#9733; {{ movie.rating|default:"N/A" }}</span>
+                    </a>
+                    <form method="post" action="{% url 'movies:movie_toggle_favorite' movie.pk %}" class="favorite-form overlay-favorite">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button type="submit" class="favorite-toggle {% if movie.is_favorite %}is-active{% endif %}" aria-label="{% if movie.is_favorite %}Unfavorite{% else %}Favorite{% endif %} {{ movie.title }}">
+                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6.02 4.02 4 6.5 4c1.74 0 3.41.81 4.5 2.09C12.09 4.81 13.76 4 15.5 4 17.98 4 20 6.02 20 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+                <div class="lb-info">
+                    <a href="{% url 'movies:movie_detail' movie.pk %}" class="lb-movie-title">
+                        {{ movie.title }}
+                    </a>
+                    <p class="lb-genres">
+                        {% for genre in movie.genres.all %}
+                            {{ genre.name }}{% if not forloop.last %}, {% endif %}
+                        {% empty %}
+                            <span class="text-gray-500">No genres</span>
+                        {% endfor %}
+                    </p>
+                    <div class="lb-meta">
+                        &middot; {{ movie.release_year }} &middot;
+                        <div class="lb-status">
+                            <div class="status-menu" aria-label="Change status">
+                                <button type="button" class="chip status-trigger" aria-expanded="false">{{ movie.get_status_display }}</button>
+                                <div class="status-dropdown">
+                                    <form method="post" action="{% url 'movies:movie_set_status' movie.pk %}" class="collection-actions-form status-form">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                    <input type="hidden" name="status" value="planned">
+                                    <button type="submit" class="status-chip {% if movie.status == 'planned' %}is-active{% endif %}">Not Chosen Yet</button>
+                                    </form>
+                                    <form method="post" action="{% url 'movies:movie_set_status' movie.pk %}" class="collection-actions-form status-form">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                    <input type="hidden" name="status" value="watching">
+                                    <button type="submit" class="status-chip {% if movie.status == 'watching' %}is-active{% endif %}">Watching</button>
+                                    </form>
+                                    <form method="post" action="{% url 'movies:movie_set_status' movie.pk %}" class="collection-actions-form status-form">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                    <input type="hidden" name="status" value="watched">
+                                    <button type="submit" class="status-chip {% if movie.status == 'watched' %}is-active{% endif %}">Watched</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="lb-actions">
+                        <form method="post" action="{% url 'movies:movie_delete' movie.pk %}" class="collection-actions-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button type="submit" class="btn btn-outline btn-small">Remove</button>
+                        </form>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+    </div>
+{% else %}
+<div class="card p-6">
+    <p class="text-gray-400">You haven't added any movies yet.</p>
+</div>
+{% endif %}
+{% endblock %}

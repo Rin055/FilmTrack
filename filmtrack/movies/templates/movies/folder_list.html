@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="page-hero mb-6">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <p class="text-sm uppercase tracking-widest text-red-300">Your Collection</p>
+            <h1 class="page-title">Folders</h1>
+            <p class="text-gray-300 mt-2">Organize your movies with built-in and custom folders.</p>
+        </div>
+        <div class="flex flex-wrap gap-3">
+            <a href="{% url 'movies:movie_list' %}" class="btn btn-muted">Back to Movies</a>
+        </div>
+    </div>
+</div>
+
+<div class="folders-panel mb-8">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+        <div>
+            <h2 class="section-title">Create Folder</h2>
+            <p class="text-gray-400 text-sm">Organize your collection into focused lists.</p>
+        </div>
+        <form method="post" action="{% url 'movies:folder_create' %}" class="folder-create-form">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <input type="text" name="name" placeholder="New folder name" maxlength="60" required>
+            <button type="submit" class="btn btn-primary btn-small">Create</button>
+        </form>
+    </div>
+    <div class="folders-grid">
+        <a href="{% url 'movies:movie_list' %}" class="folder-card">
+            <span class="folder-title">All Movies</span>
+        </a>
+        <a href="{% url 'movies:movie_list' %}?favorites=1" class="folder-card">
+            <span class="folder-title">Favorites</span>
+            <span class="folder-count">{{ favorites_count }}</span>
+        </a>
+        <a href="{% url 'movies:movie_list' %}?status=watching" class="folder-card">
+            <span class="folder-title">Watching</span>
+            <span class="folder-count">{{ watching_count }}</span>
+        </a>
+        <a href="{% url 'movies:movie_list' %}?status=watched" class="folder-card">
+            <span class="folder-title">Watched</span>
+            <span class="folder-count">{{ watched_count }}</span>
+        </a>
+        <a href="{% url 'movies:movie_list' %}?status=planned" class="folder-card">
+            <span class="folder-title">Not Chosen Yet</span>
+            <span class="folder-count">{{ planned_count }}</span>
+        </a>
+        {% for folder in folders %}
+        <a href="{% url 'movies:movie_list' %}?folder={{ folder.id }}" class="folder-card">
+            <span class="folder-title">{{ folder.name }}</span>
+            <span class="folder-count">{{ folder.movie_count }}</span>
+        </a>
+        {% endfor %}
+    </div>
+    {% if not folders %}
+    <p class="text-gray-400 text-sm mt-4">No custom folders yet. Create one above to get started.</p>
+    {% endif %}
+</div>
+{% endblock %}

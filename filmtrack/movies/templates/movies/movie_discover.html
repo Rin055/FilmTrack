@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="lb-hero mb-8">
+    <div class="lb-hero-copy">
+        <p class="lb-kicker">Discover</p>
+        <h1 class="lb-title">FilmTrack Discover</h1>
+        <p class="lb-subtitle">Browse what movie fans are loving lately. Add a title to your watchlist in a single tap.</p>
+    </div>
+    <div class="lb-hero-actions">
+        <form method="get" class="lb-search">
+            <div class="lb-search-row lb-search-row-top">
+                <div class="lb-search-group">
+                    <select name="genre" class="status-select">
+                        <option value="">All Genres</option>
+                        {% for genre in genres %}
+                            <option value="{{ genre.id }}" {% if selected_genre == genre.id|stringformat:"s" %}selected{% endif %}>
+                                {{ genre.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <select name="year" class="status-select">
+                        <option value="">All Years</option>
+                        {% for year in years %}
+                            <option value="{{ year }}" {% if selected_year == year|stringformat:"s" %}selected{% endif %}>
+                                {{ year }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <a href="{% url 'movies:movie_list' %}" class="btn btn-outline">My Collection</a>
+            </div>
+            <div class="lb-search-row lb-search-row-bottom">
+                <input
+                    type="search"
+                    name="q"
+                    value="{{ search_query }}"
+                    placeholder="Search movies..."
+                    aria-label="Search movies"
+                    class="lb-search-input"
+                >
+                <button type="submit" class="btn btn-muted btn-small">Search</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if movies %}
+<div class="lb-grid mt-4">
+    {% for movie in movies %}
+    <article class="lb-card">
+        <div class="lb-poster">
+            <a href="{% url 'movies:movie_detail' movie.pk %}">
+                {% if movie.poster_url %}
+                <img src="{{ movie.poster_url }}" alt="{{ movie.title }} poster">
+                {% else %}
+                <div class="lb-poster-fallback">No Poster</div>
+                {% endif %}
+            <span class="lb-rating">
+                &#9733;
+                {% if movie.avg_rating %}
+                    {{ movie.avg_rating|floatformat:1 }}
+                {% else %}
+                    N/A
+                {% endif %}
+            </span>
+            </a>
+            <form method="post" action="{% url 'movies:movie_toggle_favorite' movie.pk %}" class="favorite-form overlay-favorite">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" class="favorite-toggle {% if movie.user_favorite %}is-active{% endif %}" aria-label="{% if movie.user_favorite %}Unfavorite{% else %}Favorite{% endif %} {{ movie.title }}">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6.02 4.02 4 6.5 4c1.74 0 3.41.81 4.5 2.09C12.09 4.81 13.76 4 15.5 4 17.98 4 20 6.02 20 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                    </svg>
+                </button>
+            </form>
+        </div>
+        <div class="lb-info">
+            <a href="{% url 'movies:movie_detail' movie.pk %}" class="lb-movie-title">
+                {{ movie.title }}
+            </a>
+            <p class="lb-meta">
+                {{ movie.release_year }} &middot;
+                <span class="lb-status">
+                    {% if movie.user_status == 'planned' %}
+                        Not Chosen Yet
+                    {% else %}
+                        {{ movie.user_status|capfirst }}
+                    {% endif %}
+                </span>
+            </p>
+            <p class="lb-genres">
+                {% for genre in movie.genres.all %}
+                    {{ genre.name }}{% if not forloop.last %}, {% endif %}
+                {% empty %}
+                    <span class="text-gray-500">No genres</span>
+                {% endfor %}
+            </p>
+            <div class="lb-actions">
+                <form method="post" action="{% url 'movies:movie_set_status' movie.pk %}" class="lb-add-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <input type="hidden" name="status" value="planned">
+                    <button type="submit" class="btn btn-primary btn-small lb-add-button" {% if movie.user_in_collection %}disabled{% endif %}>
+                        {% if movie.user_in_collection %}Added{% else %}Add{% endif %}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </article>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card p-8 text-center">
+    <p class="text-gray-400">No movies found in the vault.</p>
+</div>
+{% endif %}
+
+<script>
+  (function () {
+    const forms = document.querySelectorAll('.lb-add-form');
+    forms.forEach((form) => {
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const formData = new FormData(form);
+        const button = form.querySelector('.lb-add-button');
+        const statusInput = form.querySelector('input[name="status"]');
+        const card = form.closest('.lb-card');
+        const statusEl = card ? card.querySelector('.lb-status') : null;
+
+        if (button) {
+          button.disabled = true;
+          button.textContent = 'Added';
+          button.classList.add('is-added');
+        }
+
+        try {
+          const response = await fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          });
+
+          if (!response.ok) {
+            throw new Error('Request failed');
+          }
+
+          if (statusEl && statusInput) {
+            statusEl.textContent = 'Recently Added';
+          }
+          if (card) {
+            card.classList.add('is-added');
+            window.setTimeout(() => card.classList.remove('is-added'), 650);
+          }
+          if (button) {
+            window.setTimeout(() => button.classList.remove('is-added'), 650);
+          }
+        } catch (error) {
+          if (button) {
+            button.disabled = false;
+            button.textContent = 'Add';
+          }
+        }
+      });
+    });
+  })();
+</script>
+{% endblock %}
