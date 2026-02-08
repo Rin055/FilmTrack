@@ -19,4 +19,6 @@ urlpatterns = [
     path('movie/<int:pk>/folder/add/', views.add_movie_to_folder, name='movie_add_to_folder'),
     path('movie/<int:pk>/folder/remove/', views.remove_movie_from_folder, name='movie_remove_from_folder'),
     path('folders/create/', views.create_folder, name='folder_create'),
+    path('folders/<int:pk>/rename/', views.rename_folder, name='folder_rename'),
+    path('folders/<int:pk>/delete/', views.delete_folder, name='folder_delete'),
 ]

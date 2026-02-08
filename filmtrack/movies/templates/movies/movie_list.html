@@ -75,7 +75,11 @@
                         &middot; {{ movie.release_year }} &middot;
                         <div class="lb-status">
                             <div class="status-menu" aria-label="Change status">
-                                <button type="button" class="chip status-trigger" aria-expanded="false">{{ movie.get_status_display }}</button>
+                                {% with folder_label=movie.folders.all|first %}
+                                <button type="button" class="chip status-trigger" aria-expanded="false">
+                                    {% if folder_label %}{{ folder_label.name }}{% else %}{{ movie.get_status_display }}{% endif %}
+                                </button>
+                                {% endwith %}
                                 <div class="status-dropdown">
                                     <form method="post" action="{% url 'movies:movie_set_status' movie.pk %}" class="collection-actions-form status-form">
                                     {% csrf_token %}
@@ -95,6 +99,17 @@
                                     <input type="hidden" name="status" value="watched">
                                     <button type="submit" class="status-chip {% if movie.status == 'watched' %}is-active{% endif %}">Watched</button>
                                     </form>
+                                    {% if folders %}
+                                    <div class="status-divider">Add to folder</div>
+                                    {% for folder in folders %}
+                                    <form method="post" action="{% url 'movies:movie_add_to_folder' movie.pk %}" class="collection-actions-form folder-form">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                    <input type="hidden" name="folder_id" value="{{ folder.id }}">
+                                    <button type="submit" class="status-chip">+ {{ folder.name }}</button>
+                                    </form>
+                                    {% endfor %}
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>

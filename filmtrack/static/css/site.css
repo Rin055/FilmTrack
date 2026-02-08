@@ -703,6 +703,8 @@ h1, h2, h3, h4, .brand-title {
   border: 1px solid rgba(239, 68, 68, 0.2);
   background: rgba(15, 15, 15, 0.9);
   color: #f5f5f5;
+  position: relative;
+  text-decoration: none;
   transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -720,6 +722,111 @@ h1, h2, h3, h4, .brand-title {
 .folder-title {
   font-weight: 700;
   font-size: 1rem;
+}
+
+.folder-link {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: inherit;
+  text-decoration: none;
+  flex: 1;
+}
+
+.folder-card--editable {
+  padding: 14px 16px 16px;
+}
+
+.folder-menu {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.folder-menu summary {
+  list-style: none;
+}
+
+.folder-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.folder-menu-trigger {
+  border: none;
+  background: none;
+  color: #f5f5f5;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.folder-menu[open] .folder-menu-trigger {
+  color: #fecaca;
+}
+
+.folder-menu-panel {
+  position: absolute;
+  top: 34px;
+  right: 0;
+  min-width: 200px;
+  background: rgba(12, 12, 12, 0.98);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 10;
+  box-shadow: 0 18px 26px rgba(0, 0, 0, 0.4);
+}
+
+.folder-menu-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.folder-menu-form input[type="text"] {
+  width: 100%;
+  background: rgba(20, 20, 20, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #f5f5f5;
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+}
+
+.folder-menu-delete {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.folder-menu-note {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.folder-delete-btn {
+  border-color: rgba(239, 68, 68, 0.6);
+  color: #fca5a5;
+}
+
+.folder-save-icon {
+  border: none;
+  background: none;
+  padding: 0 4px;
+  color: #fca5a5;
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.folder-save-icon:hover {
+  color: #fecaca;
 }
 
 .folder-count {

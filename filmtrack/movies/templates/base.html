@@ -113,6 +113,41 @@
           });
         });
 
+        const folderForms = document.querySelectorAll('.folder-form');
+        folderForms.forEach((form) => {
+          form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const menu = form.closest('.status-menu');
+            const trigger = menu ? menu.querySelector('.status-trigger') : null;
+
+            try {
+              const response = await fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+              });
+
+              if (!response.ok) {
+                throw new Error('Folder request failed');
+              }
+
+              const data = await response.json();
+              if (trigger && data.folder_name) {
+                trigger.textContent = data.folder_name;
+              }
+              if (menu) {
+                menu.classList.remove('is-open');
+                if (trigger) {
+                  trigger.setAttribute('aria-expanded', 'false');
+                }
+              }
+            } catch (error) {
+              return;
+            }
+          });
+        });
+
         const statusMenus = document.querySelectorAll('.status-menu');
         statusMenus.forEach((menu) => {
           const trigger = menu.querySelector('.status-trigger');

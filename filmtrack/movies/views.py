@@ -2,6 +2,7 @@ from django.views.generic import ListView, DetailView, CreateView, TemplateView
 from django.shortcuts import get_object_or_404, redirect
 from django.http import JsonResponse
 from django.db.models import Avg, Max, Count, Prefetch
+from django.db import IntegrityError
 from .models import Movie, Rating, Comment, Genre, Folder
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
@@ -60,6 +61,11 @@ class MovieListView(LoginRequiredMixin, ListView):
         context['favorites_only'] = self.request.GET.get('favorites', '').strip() == '1'
         context['selected_status'] = self.request.GET.get('status', '').strip()
         context['selected_sort'] = self.request.GET.get('sort', '').strip() or 'newest'
+        context['folders'] = (
+            Folder.objects.filter(user=self.request.user)
+            .only('id', 'name')
+            .order_by('name')
+        )
         return context
 
 class FolderListView(LoginRequiredMixin, TemplateView):
@@ -343,6 +349,30 @@ def create_folder(request):
     return redirect(request.POST.get('next') or 'movies:movie_list')
 
 @login_required
+def rename_folder(request, pk):
+    if request.method != 'POST':
+        return redirect('movies:folder_list')
+
+    folder = get_object_or_404(Folder, pk=pk, user=request.user)
+    name = request.POST.get('name', '').strip()
+    if name and name != folder.name:
+        folder.name = name
+        try:
+            folder.save(update_fields=['name'])
+        except IntegrityError:
+            pass
+    return redirect(request.POST.get('next') or 'movies:folder_list')
+
+@login_required
+def delete_folder(request, pk):
+    if request.method != 'POST':
+        return redirect('movies:folder_list')
+
+    folder = get_object_or_404(Folder, pk=pk, user=request.user)
+    folder.delete()
+    return redirect(request.POST.get('next') or 'movies:folder_list')
+
+@login_required
 def add_movie_to_folder(request, pk):
     if request.method != 'POST':
         return redirect('movies:movie_list')
@@ -353,9 +383,14 @@ def add_movie_to_folder(request, pk):
 
     movie = get_object_or_404(Movie, pk=pk)
     folder = get_object_or_404(Folder, pk=int(folder_id), user=request.user)
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
     if request.user.is_superuser or movie.user_id == request.user.id:
         folder.movies.add(movie)
+        if is_ajax:
+            return JsonResponse({'ok': True, 'folder_name': folder.name, 'folder_id': folder.id})
+    elif is_ajax:
+        return JsonResponse({'ok': False}, status=403)
     return redirect(request.POST.get('next') or 'movies:movie_list')
 
 @login_required

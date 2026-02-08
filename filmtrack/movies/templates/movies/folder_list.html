@@ -28,30 +28,58 @@
         </form>
     </div>
     <div class="folders-grid">
-        <a href="{% url 'movies:movie_list' %}" class="folder-card">
-            <span class="folder-title">All Movies</span>
-        </a>
-        <a href="{% url 'movies:movie_list' %}?favorites=1" class="folder-card">
-            <span class="folder-title">Favorites</span>
-            <span class="folder-count">{{ favorites_count }}</span>
-        </a>
-        <a href="{% url 'movies:movie_list' %}?status=watching" class="folder-card">
-            <span class="folder-title">Watching</span>
-            <span class="folder-count">{{ watching_count }}</span>
-        </a>
-        <a href="{% url 'movies:movie_list' %}?status=watched" class="folder-card">
-            <span class="folder-title">Watched</span>
-            <span class="folder-count">{{ watched_count }}</span>
-        </a>
-        <a href="{% url 'movies:movie_list' %}?status=planned" class="folder-card">
-            <span class="folder-title">Not Chosen Yet</span>
-            <span class="folder-count">{{ planned_count }}</span>
-        </a>
+        <div class="folder-card">
+            <a href="{% url 'movies:movie_list' %}" class="folder-link">
+                <span class="folder-title">All Movies</span>
+            </a>
+        </div>
+        <div class="folder-card">
+            <a href="{% url 'movies:movie_list' %}?favorites=1" class="folder-link">
+                <span class="folder-title">Favorites</span>
+                <span class="folder-count">{{ favorites_count }}</span>
+            </a>
+        </div>
+        <div class="folder-card">
+            <a href="{% url 'movies:movie_list' %}?status=watching" class="folder-link">
+                <span class="folder-title">Watching</span>
+                <span class="folder-count">{{ watching_count }}</span>
+            </a>
+        </div>
+        <div class="folder-card">
+            <a href="{% url 'movies:movie_list' %}?status=watched" class="folder-link">
+                <span class="folder-title">Watched</span>
+                <span class="folder-count">{{ watched_count }}</span>
+            </a>
+        </div>
+        <div class="folder-card">
+            <a href="{% url 'movies:movie_list' %}?status=planned" class="folder-link">
+                <span class="folder-title">Not Chosen Yet</span>
+                <span class="folder-count">{{ planned_count }}</span>
+            </a>
+        </div>
         {% for folder in folders %}
-        <a href="{% url 'movies:movie_list' %}?folder={{ folder.id }}" class="folder-card">
-            <span class="folder-title">{{ folder.name }}</span>
-            <span class="folder-count">{{ folder.movie_count }}</span>
-        </a>
+        <div class="folder-card folder-card--editable">
+            <a href="{% url 'movies:movie_list' %}?folder={{ folder.id }}" class="folder-link">
+                <span class="folder-title">{{ folder.name }}</span>
+                <span class="folder-count">{{ folder.movie_count }}</span>
+            </a>
+            <details class="folder-menu">
+                <summary class="folder-menu-trigger" aria-label="Folder actions">⋯</summary>
+                <div class="folder-menu-panel">
+                    <form method="post" action="{% url 'movies:folder_rename' folder.id %}" class="folder-menu-form folder-menu-row">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <input type="text" name="name" value="{{ folder.name }}" maxlength="60" required>
+                        <button type="submit" class="folder-save-icon" aria-label="Save rename">✓</button>
+                    </form>
+                    <form method="post" action="{% url 'movies:folder_delete' folder.id %}" class="folder-menu-delete">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button type="submit" class="btn btn-outline btn-small folder-delete-btn">Delete</button>
+                    </form>
+                </div>
+            </details>
+        </div>
         {% endfor %}
     </div>
     {% if not folders %}
